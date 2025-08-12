@@ -1,29 +1,46 @@
-;;; dendroam.el --- Description -*- lexical-binding: t; -*-
+;;; arbos.el --- Description -*- lexical-binding: t; -*-
 ;;
 ;; Copyright (C) 2021 Victor Rodriguez
 ;;
-;; Author: Victor Rodriguez <https://github.com/vrodriguez>
-;; Maintainer: Victor Rodriguez <vrodriguez@confluent.io>
+;; Original-author: Victor Rodriguez <https://github.com/vrodriguez>
+;; Maintainer: Martin Petkovski <https://github.com/mpetco>
 ;; Created: April 26, 2021
-;; Modified: April 26, 2021
+;; Forked-since: August 12, 2025
 ;; Version: 0.0.1
-;; Keywords: Symbol’s value as variable is void: finder-known-keywords
-;; Homepage: https://github.com/vrodriguez/dendroam
+;; Keywords: note-taking org-mode
+;; Homepage: https://github.com/mpetco/arbos
 ;; Package-Requires: ((emacs "24.3"))
 ;;
-;; This file is not part of GNU Emacs.
-;;
+
+;; This file is not part of GNU Emacs
+
+;; This program is free software: you can redistribute it and/or modify
+;; it under the terms of the GNU General Public License as published by
+;; the Free Software Foundation, either version 3 of the License, or
+;; (at your option) any later version.
+
+;; This program is distributed in the hope that it will be useful,
+;; but WITHOUT ANY WARRANTY; without even the implied warranty of
+;; MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+;; GNU General Public License for more details.
+
+;; You should have received a copy of the GNU General Public License
+;; along with this program. If not, see <http://www.gnu.org/licenses/>.
+
 ;;; Commentary:
 ;;
-;;  Description
+;; This package is a fork of dendroam by Victor Rodriguez. The intent is to stick closely to a hierarchical note taking philosophy while decoupling away from roam.
+;; Arbos means tree in latin.
 ;;
 ;;; Code:
 
 
 
-(provide 'dendroam)
+(provide 'arbos)
 
-(defvar dendroam-capture-templates
+(defvar arbos-directory)
+
+(defvar arbos-capture-templates
   '(("t" "Time note" entry
      "* %?"
      :if-new (file+head "${current-file}.%<%Y.%m.%d.%M%S%3N>.org"
@@ -50,7 +67,7 @@ or sratch notes")
       (org-roam-node-title node)
       "\\.")))))
 
-(defun dendroam-format-hierarchy (file)
+(defun arbos-format-hierarchy (file)
   "Formats node's path, to get the hierarchy whithout the title
 where title will be the last child of the hierarchy:
 from the filename this.is.a.hierarchy.note-title.org
@@ -61,14 +78,14 @@ returns this.is.a.hierarchy"
 
 (cl-defmethod org-roam-node-hierarchy (node)
   "Gets node hierarchy by file name"
-  (funcall 'dendroam-format-hierarchy (org-roam-node-file node)))
+  (funcall 'arbos-format-hierarchy (org-roam-node-file node)))
 
 (cl-defmethod org-roam-node-current-file (node)
   (file-name-base (buffer-file-name)))
 
 ;; Refactor functions
 
-(defun dendroam-fetch-same-hierarchy-files (hierarchy)
+(defun arbos-fetch-same-hierarchy-files (hierarchy)
   "Gets all the nodes that share the same HIERARCHY totally or parcially"
   (let ((files
          (mapcar #'car (org-roam-db-query [:select [file]
@@ -77,7 +94,7 @@ returns this.is.a.hierarchy"
                                           (concat "%" hierarchy "%")))))
     files))
 
-(defun dendroam-refactor-hierarchy (&optional current)
+(defun arbos-refactor-hierarchy (&optional current)
   "Prompts the user to change the hierarchy of the current file
 node and updates its hierarchy and the hierarchy of all the nodes
 that have it if CURRENT is t the list of updated files is just
@@ -94,7 +111,7 @@ the current file"
         (file-name-base initial-slug))
        (files-to-upd (if current
                          `(,initial-file)
-                       (dendroam-fetch-same-hierarchy-files
+                       (arbos-fetch-same-hierarchy-files
                         initial-slug-no-title))))
 
     (dolist (file files-to-upd)
@@ -106,7 +123,7 @@ the current file"
               (kill-current-buffer)
               (find-file new-file)))))))
 
-(defun dendroam-refactor-file ()
+(defun arbos-refactor-file ()
   (interactive)
   (let* ((initial-file (buffer-file-name))
          (initial-slug (file-name-base initial-file))
@@ -119,25 +136,25 @@ the current file"
     (find-file new-file)))
 
 ;; Useful notes functions
-(defun dendroam-insert-time-note(&optional goto)
+(defun arbos-insert-time-note(&optional goto)
   "Creates a time note in the current level of the hierarchy.
 Time notes have the format: current.Y.m.d.MS3N
-The file is created using a template from `dendroam-capture-templates'"
+The file is created using a template from `arbos-capture-templates'"
   (interactive "P")
   (org-roam-capture- :goto (when goto '(4))
                      :node (org-roam-node-create)
-                     :templates dendroam-capture-templates
+                     :templates arbos-capture-templates
                      :keys "t"
                      :props (list :default-time (current-time))))
 
-(defun dendroam-insert-scratch-note(&optional goto)
+(defun arbos-insert-scratch-note(&optional goto)
   "Creates a time note in the current level of the hierarchy.
 Time notes have the format: current.Y.m.d.MS3N
 The file is created using a template from `dendroam-capture-templates'"
   (interactive "P")
   (org-roam-capture- :goto (when goto '(4))
                      :node (org-roam-node-create)
-                     :templates dendroam-capture-templates
+                     :templates arbos-capture-templates
                      :keys "s"
                      :props (list :default-time (current-time))))
 
@@ -183,4 +200,4 @@ and will create a file wih the name: lang.elisp.what-is-nil"
                       ("_$" . "")))                   ;; remove ending underscore
              (slug (-reduce-from #'cl-replace (strip-nonspacing-marks title) pairs)))
         (downcase slug))))))
-;;; dendroam.el ends here
+;;; arbos.el ends here
